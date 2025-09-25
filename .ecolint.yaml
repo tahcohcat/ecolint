@@ -1,0 +1,20 @@
+# ecolint configuration file
+# 🌱 cultivating clean environments
+
+# Required environment variables that must be present
+required_vars:
+  - DATABASE_URL
+  - API_KEY
+  - PORT
+
+# Rule configuration
+rules:
+  duplicate: true      # Check for duplicate variable definitions
+  missing: true        # Check for missing required variables
+  syntax: true         # Validate .env file syntax
+  empty_values: true   # Warn about empty variable values
+
+# Output configuration  
+output:
+  format: "pretty"     # Output format: pretty, json, github
+  color: true          # Enable colored output

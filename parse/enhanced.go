@@ -4,22 +4,28 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/tahcohcat/ecolint/domain/env"
+	"github.com/tahcohcat/ecolint/domain/issues"
 	"os"
 	"strings"
 )
 
-type Parser struct {
+type EnhancedResult struct {
+	IssueList []issues.Issue
+	Vars      []env.Var
 }
 
-func NewParser() *Parser {
-	return &Parser{}
+type EnhancedParser struct {
 }
 
-func (p *Parser) Parse(filename string) ([]env.Var, error) {
-	return p.parseFile(filename)
+func NewEnhanced() *EnhancedParser {
+	return &EnhancedParser{}
 }
 
-func (p *Parser) parseFile(path string) ([]env.Var, error) {
+func (e *EnhancedParser) Parse(filename string) ([]env.Var, error) {
+	return e.parseFile(filename)
+}
+
+func (e *EnhancedParser) parseFile(path string) ([]env.Var, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("cannot open .env file: %w", err)
@@ -53,4 +59,9 @@ func (p *Parser) parseFile(path string) ([]env.Var, error) {
 	}
 
 	return vars, nil
+}
+
+func (e *EnhancedParser) ParseWithIssues(file string) (EnhancedResult, error) {
+	// todo:
+	return EnhancedResult{}, nil
 }

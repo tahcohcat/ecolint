@@ -1,9 +1,9 @@
 package lint
 
 import (
-	"ecolint/domain/issues"
-	"ecolint/parse"
-	"ecolint/rules"
+	"github.com/tahcohcat/ecolint/domain/issues"
+	"github.com/tahcohcat/ecolint/parse"
+	"github.com/tahcohcat/ecolint/rules"
 )
 
 type Linter struct {

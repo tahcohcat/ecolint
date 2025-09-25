@@ -1,10 +1,10 @@
 package main
 
 import (
-	"ecolint/lint"
-	"ecolint/parse"
-	"ecolint/rules"
 	"fmt"
+	"github.com/tahcohcat/ecolint/lint"
+	"github.com/tahcohcat/ecolint/parse"
+	"github.com/tahcohcat/ecolint/rules"
 	"log"
 )
 
