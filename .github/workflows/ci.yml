@@ -54,7 +54,7 @@ jobs:
         run: |
           ./ecolint --help
           ./ecolint init --force
-          echo "TEST_VAR=value" > test.env
+           echo `TEST_VAR=value` > test.env
           ./ecolint lint test.env
 
   lint-env-files:

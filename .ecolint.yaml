@@ -3,9 +3,7 @@
 
 # Required environment variables that must be present
 required_vars:
-  - DATABASE_URL
-  - API_KEY
-  - PORT
+
 
 # Rule configuration
 rules:
