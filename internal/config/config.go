@@ -17,6 +17,8 @@ type Config struct {
 type Rules struct {
 	Duplicate   bool `yaml:"duplicate"`
 	Missing     bool `yaml:"missing"`
+	Security    bool `yaml:"security"`
+	Convention  bool `yaml:"convention"`
 	Syntax      bool `yaml:"syntax"`
 	EmptyValues bool `yaml:"empty_values"`
 }

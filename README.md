@@ -210,12 +210,12 @@ go build -o ecolint cmd/ecolint/main.go
 
 ## 📈 Roadmap
 
-- [ ] 🔧 **Auto-fix mode**: Automatically fix common issues
+- [X] 🔧 **Auto-fix mode**: Automatically fix common issues
+- [X] 🐳 **Docker Images**: Pre-built container images
 - [ ] 🌐 **Multi-language support**: Support for other env formats
 - [ ] 📊 **Metrics**: Track environment file health over time
 - [ ] 🔌 **Plugins**: Custom rule development API
 - [ ] 📱 **IDE Integration**: VS Code, IntelliJ extensions
-- [ ] 🐳 **Docker Images**: Pre-built container images
 - [ ] 📚 **More Rules**: Expanded rule set for edge cases
 
 ## 🐛 Bug Reports & Feature Requests

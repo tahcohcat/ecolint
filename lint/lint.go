@@ -7,32 +7,32 @@ import (
 	"github.com/tahcohcat/ecolint/rules"
 )
 
-// EnhancedLinter provides better error handling and parsing issues integration
-type EnhancedLinter struct {
+// Linter provides better error handling and parsing issues integration
+type Linter struct {
 	rules              []rules.Rule
 	parser             *parse.EnhancedParser
 	includeParseIssues bool
 }
 
-func NewEnhanced(p *parse.EnhancedParser) *EnhancedLinter {
-	return &EnhancedLinter{
+func New(p *parse.EnhancedParser) *Linter {
+	return &Linter{
 		rules:              make([]rules.Rule, 0),
 		parser:             p,
 		includeParseIssues: true,
 	}
 }
 
-func (l *EnhancedLinter) WithRule(rule rules.Rule) *EnhancedLinter {
+func (l *Linter) WithRule(rule rules.Rule) *Linter {
 	l.rules = append(l.rules, rule)
 	return l
 }
 
-func (l *EnhancedLinter) WithParseIssues(include bool) *EnhancedLinter {
+func (l *Linter) WithParseIssues(include bool) *Linter {
 	l.includeParseIssues = include
 	return l
 }
 
-func (l *EnhancedLinter) Lint(files []string) ([]issues.Issue, error) {
+func (l *Linter) Lint(files []string) ([]issues.Issue, error) {
 	var allIssues []issues.Issue
 
 	for _, file := range files {
@@ -58,10 +58,10 @@ func (l *EnhancedLinter) Lint(files []string) ([]issues.Issue, error) {
 }
 
 // LintSingle lints a single file and returns detailed results
-func (l *EnhancedLinter) LintSingle(file string) (LintResult, error) {
+func (l *Linter) LintSingle(file string) (Result, error) {
 	result, err := l.parser.ParseWithIssues(file)
 	if err != nil {
-		return LintResult{}, err
+		return Result{}, err
 	}
 
 	var ruleIssues []issues.Issue
@@ -69,7 +69,7 @@ func (l *EnhancedLinter) LintSingle(file string) (LintResult, error) {
 		ruleIssues = append(ruleIssues, rule(result.Vars, file)...)
 	}
 
-	return LintResult{
+	return Result{
 		File:        file,
 		Vars:        result.Vars,
 		ParseIssues: result.IssueList,
@@ -78,7 +78,7 @@ func (l *EnhancedLinter) LintSingle(file string) (LintResult, error) {
 	}, nil
 }
 
-type LintResult struct {
+type Result struct {
 	File        string
 	Vars        []env.Var
 	ParseIssues []issues.Issue
@@ -86,7 +86,7 @@ type LintResult struct {
 	TotalIssues int
 }
 
-func (lr LintResult) AllIssues() []issues.Issue {
+func (lr Result) AllIssues() []issues.Issue {
 	all := make([]issues.Issue, 0, lr.TotalIssues)
 	all = append(all, lr.ParseIssues...)
 	all = append(all, lr.RuleIssues...)

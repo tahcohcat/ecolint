@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/tahcohcat/ecolint/lint"
 	"github.com/tahcohcat/ecolint/parse"
 	"github.com/tahcohcat/ecolint/rules"
-	"log"
 )
 
 var (
@@ -16,7 +17,7 @@ var (
 )
 
 func main() {
-	issues, err := lint.New(parse.NewParser()).
+	issues, err := lint.New(parse.NewEnhanced()).
 		WithRule(rules.Duplicate).
 		Lint(files)
 

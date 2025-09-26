@@ -74,16 +74,21 @@ func runLint(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create linter with appropriate rules
-	linter := lint.NewEnhanced(parse.NewEnhanced())
+	linter := lint.New(parse.NewEnhanced())
 
 	// Add rules based on configuration
 	if cfg.Rules.Duplicate {
 		linter.WithRule(rules.Duplicate)
 	}
-	// Add more rules here as you implement them
-	// if cfg.Rules.Missing {
-	//     linter.WithRule(rules.Missing)
-	// }
+	if cfg.Rules.Missing {
+		linter.WithRule(rules.Missing(cfg.RequiredVars))
+	}
+	if cfg.Rules.Security {
+		linter.WithRule(rules.Security)
+	}
+	if cfg.Rules.Convention {
+		linter.WithRule(rules.Convention)
+	}
 
 	// Run linting
 	issues, err := linter.Lint(files)
