@@ -28,16 +28,16 @@ A delightfully fast and extensible linter for environment files that helps you m
 
 #### Homebrew (macOS/Linux)
 ```bash
-brew install yourusername/tap/ecolint
+brew install tahcohcat/tap/ecolint
 ```
 
 #### Go Install
 ```bash
-go install github.com/yourusername/ecolint/cmd/ecolint@latest
+go install github.com/tahcohcat/ecolint/cmd/ecolint@latest
 ```
 
 #### Download Binary
-Grab the latest binary from the [releases page](https://github.com/yourusername/ecolint/releases).
+Grab the latest binary from the [releases page](https://github.com/tahcohcat/ecolint/releases).
 
 ### Basic Usage
 
@@ -192,7 +192,7 @@ We love contributions! Here's how to get started:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/ecolint.git
+git clone https://github.com/tahcohcat/ecolint.git
 cd ecolint
 
 # Install dependencies
@@ -222,9 +222,9 @@ go build -o ecolint cmd/ecolint/main.go
 
 Found a bug? Have an idea for a cool feature? We'd love to hear from you!
 
-- 🐛 [Report a Bug](https://github.com/yourusername/ecolint/issues/new?template=bug_report.md)
-- 💡 [Request a Feature](https://github.com/yourusername/ecolint/issues/new?template=feature_request.md)
-- 💬 [Start a Discussion](https://github.com/yourusername/ecolint/discussions)
+- 🐛 [Report a Bug](https://github.com/tahcohcat/ecolint/issues/new?template=bug_report.md)
+- 💡 [Request a Feature](https://github.com/tahcohcat/ecolint/issues/new?template=feature_request.md)
+- 💬 [Start a Discussion](https://github.com/tahcohcat/ecolint/discussions)
 
 ## 📜 License
 
@@ -238,11 +238,11 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## ⭐ Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=yourusername/ecolint&type=Date)](https://star-history.com/#yourusername/ecolint&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=tahcohcat/ecolint&type=Date)](https://star-history.com/#yourusername/ecolint&Date)
 
 ---
 
 <div align="center">
   <p><strong>Made with 💚 by developers, for developers</strong></p>
-  <p>If ecolint helped you catch a bug, consider <a href="https://github.com/yourusername/ecolint">giving it a star ⭐</a></p>
+  <p>If ecolint helped you catch a bug, consider <a href="https://github.com/tahcohcat/ecolint">giving it a star ⭐</a></p>
 </div>
