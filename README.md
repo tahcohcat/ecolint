@@ -1,7 +1,7 @@
 # 🌱 ecolint
 
 [![Go Version](https://img.shields.io/badge/go-1.25+-blue.svg)](https://golang.org/dl/)
-[![Build Status](https://img.shields.io/github/workflow/status/tahcohcat/ecolint/CI)](https://github.com/yourusername/ecolint/actions)
+[![Build Status](https://img.shields.io/github/workflow/status/tahcohcat/ecolint/CI)](https://github.com/tahcohcat/ecolint/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/tahcohcat/ecolint)](https://goreportcard.com/report/github.com/yourusername/ecolint)
 [![codecov](https://codecov.io/gh/yourusername/ecolint/branch/main/graph/badge.svg)](https://codecov.io/gh/tahcohcat/ecolint)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
