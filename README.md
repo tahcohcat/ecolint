@@ -238,7 +238,7 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## ⭐ Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=tahcohcat/ecolint&type=Date)](https://star-history.com/#yourusername/ecolint&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=tahcohcat/ecolint&type=Date)](https://star-history.com/#tahcohcat/ecolint&Date)
 
 ---
 
