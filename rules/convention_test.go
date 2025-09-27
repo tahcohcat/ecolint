@@ -105,7 +105,7 @@ func TestConvention(t *testing.T) {
 				{Key: "DB_PWD", Value: "secret", Line: 2},
 				{Key: "SVR", Value: "8080", Line: 3},
 			},
-			expected: 2,
+			expected: 3,
 		},
 	}
 

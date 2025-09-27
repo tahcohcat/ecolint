@@ -153,7 +153,7 @@ func Convention(vars []env.Var, file string) []issues.Issue {
 		for abbrev, full := range abbreviationSuggestions {
 			if strings.Contains(v.Key, abbrev) && !strings.Contains(v.Key, full) {
 				// Only suggest if it's not already part of a longer word
-				pattern := regexp.MustCompile(`\b` + abbrev + `\b`)
+				pattern := regexp.MustCompile(`(^|_)` + abbrev + `(_|$)`)
 				if pattern.MatchString(v.Key) {
 					if !issueFound {
 						issueFound = true

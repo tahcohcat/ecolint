@@ -14,8 +14,6 @@ A delightfully fast and extensible linter for environment files that helps you m
 ## ✨ Features
 
 - 🔍 **Smart Detection**: Finds duplicates, missing variables, and syntax errors
-- 🎨 **Beautiful Output**: Colorful, emoji-rich terminal output that actually makes you happy
-- ⚡ **Lightning Fast**: Written in Go for maximum performance
 - 🔧 **Highly Configurable**: YAML configuration with sensible defaults
 - 📦 **Zero Dependencies**: Single binary, no runtime requirements
 - 🎯 **Multiple Formats**: Pretty, JSON, and GitHub Actions output
@@ -212,6 +210,7 @@ go build -o ecolint cmd/ecolint/main.go
 
 - [X] 🔧 **Auto-fix mode**: Automatically fix common issues
 - [X] 🐳 **Docker Images**: Pre-built container images
+- [X] 🌐 **Auto required detect**: Support for auto detection of required variables in projects
 - [ ] 🌐 **Multi-language support**: Support for other env formats
 - [ ] 📊 **Metrics**: Track environment file health over time
 - [ ] 🔌 **Plugins**: Custom rule development API
