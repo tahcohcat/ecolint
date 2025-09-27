@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/tahcohcat/ecolint/internal/config"
 	"github.com/tahcohcat/ecolint/internal/output"
+	"github.com/tahcohcat/ecolint/internal/scan"
 	"github.com/tahcohcat/ecolint/lint"
 	"github.com/tahcohcat/ecolint/parse"
 	"github.com/tahcohcat/ecolint/rules"
@@ -21,25 +22,36 @@ var lintCmd = &cobra.Command{
 
 This command checks your .env files for:
 • Duplicate variable definitions
-• Missing required variables
+• Missing required variables (from config or auto-discovered)
 • Syntax errors
 • Empty values
 • Security issues (potential secrets)
 • Naming conventions
 
+Auto-Discovery Mode:
+When --auto-discover is used, ecolint will scan your project files to
+automatically find environment variables that your code uses, eliminating
+the need to manually configure required variables.
+
 Examples:
-  ecolint lint                    # lint .env in current directory
-  ecolint lint .env .env.local    # lint specific files
-  ecolint lint --recursive .      # recursively find and lint all .env files
-  ecolint lint --format json      # output in JSON format`,
+  ecolint lint                        # lint .env in current directory
+  ecolint lint .env .env.local        # lint specific files
+  ecolint lint --recursive .          # recursively find and lint all .env files
+  ecolint lint --auto-discover        # auto-discover required variables
+  ecolint lint --auto-discover --scan-path ./src  # scan specific directory
+  ecolint lint --format json          # output in JSON format`,
 	RunE: runLint,
 }
 
 var (
-	recursiveFlag bool
-	formatFlag    string
-	quietFlag     bool
-	configFlag    string
+	recursiveFlag     bool
+	formatFlag        string
+	quietFlag         bool
+	configFlag        string
+	autoDiscoverFlag  bool
+	scanPathFlag      string
+	minConfidenceFlag float64
+	minUsagesFlag     int
 )
 
 func init() {
@@ -49,6 +61,10 @@ func init() {
 	lintCmd.Flags().StringVarP(&formatFlag, "format", "f", "", "output format (pretty, json, github)")
 	lintCmd.Flags().BoolVarP(&quietFlag, "quiet", "q", false, "suppress output when no issues found")
 	lintCmd.Flags().StringVarP(&configFlag, "config", "c", "", "path to configuration file")
+	lintCmd.Flags().BoolVar(&autoDiscoverFlag, "auto-discover", false, "automatically discover required variables by scanning project")
+	lintCmd.Flags().StringVar(&scanPathFlag, "scan-path", ".", "path to scan for auto-discovery (default: current directory)")
+	lintCmd.Flags().Float64Var(&minConfidenceFlag, "min-confidence", 0.7, "minimum confidence for auto-discovered variables (0.0-1.0)")
+	lintCmd.Flags().IntVar(&minUsagesFlag, "min-usages", 1, "minimum usages for auto-discovered variables")
 }
 
 func runLint(cmd *cobra.Command, args []string) error {
@@ -58,6 +74,21 @@ func runLint(cmd *cobra.Command, args []string) error {
 	// Override format from command line if provided
 	if formatFlag != "" {
 		cfg.Output.Format = formatFlag
+	}
+
+	// Auto-discover required variables if requested
+	if autoDiscoverFlag {
+		discoveredVars, err := autoDiscoverRequiredVars()
+		if err != nil {
+			return fmt.Errorf("auto-discovery failed: %w", err)
+		}
+
+		if !quietFlag && len(discoveredVars) > 0 {
+			fmt.Printf("🔍 Auto-discovered %d required variables from project scan\n", len(discoveredVars))
+		}
+
+		// Merge with configured required vars (auto-discovered takes precedence)
+		cfg.RequiredVars = mergeLists(cfg.RequiredVars, discoveredVars)
 	}
 
 	// Determine files to lint
@@ -80,7 +111,7 @@ func runLint(cmd *cobra.Command, args []string) error {
 	if cfg.Rules.Duplicate {
 		linter.WithRule(rules.Duplicate)
 	}
-	if cfg.Rules.Missing {
+	if cfg.Rules.Missing && len(cfg.RequiredVars) > 0 {
 		linter.WithRule(rules.Missing(cfg.RequiredVars))
 	}
 	if cfg.Rules.Security {
@@ -106,6 +137,46 @@ func runLint(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+func autoDiscoverRequiredVars() ([]string, error) {
+	// Create scanner
+	scanner := scan.NewProjectScanner()
+
+	// Perform scan
+	result, err := scanner.ScanProject(scanPathFlag)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get required variables based on confidence and usage thresholds
+	required := result.GetRequiredVariables(minConfidenceFlag, minUsagesFlag)
+
+	return required, nil
+}
+
+func mergeLists(existing, discovered []string) []string {
+	// Create a map to track unique variables
+	unique := make(map[string]bool)
+	var merged []string
+
+	// Add discovered variables first (they take precedence)
+	for _, v := range discovered {
+		if !unique[v] {
+			unique[v] = true
+			merged = append(merged, v)
+		}
+	}
+
+	// Add existing configured variables if not already present
+	for _, v := range existing {
+		if !unique[v] {
+			unique[v] = true
+			merged = append(merged, v)
+		}
+	}
+
+	return merged
 }
 
 func getFilesToLint(args []string, recursive bool) ([]string, error) {

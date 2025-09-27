@@ -1,0 +1,328 @@
+package cmd
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+
+	"github.com/spf13/cobra"
+	"github.com/tahcohcat/ecolint/internal/scan"
+)
+
+var scanCmd = &cobra.Command{
+	Use:   "scan [path]",
+	Short: "🔍 Discover environment variables used in your project",
+	Long: `🔍 Discover environment variables used in your project
+
+This command scans your project files to automatically discover which
+environment variables are being used. This helps identify what variables
+should be defined in your .env files without manually specifying them.
+
+The scanner looks for common patterns across multiple languages:
+• Go: os.Getenv("VAR_NAME")
+• JavaScript/Node.js: process.env.VAR_NAME
+• Python: os.environ["VAR_NAME"] or os.getenv("VAR_NAME")
+• Shell: $VAR_NAME or ${VAR_NAME}
+• Docker: ENV VAR_NAME
+• And many more...
+
+Examples:
+  ecolint scan                    # scan current directory
+  ecolint scan ./src              # scan specific directory
+  ecolint scan --min-confidence 0.8  # only show high-confidence matches
+  ecolint scan --output json      # output results in JSON format
+  ecolint scan --generate-config  # generate .ecolint.yaml with discovered vars`,
+	RunE: runScan,
+}
+
+var (
+	scanMinConfidence  float64
+	scanMinUsages      int
+	scanOutput         string
+	scanGenerateConfig bool
+	scanExcludePaths   []string
+	scanIncludeExts    []string
+	scanShowUsages     bool
+)
+
+func init() {
+	rootCmd.AddCommand(scanCmd)
+
+	scanCmd.Flags().Float64Var(&scanMinConfidence, "min-confidence", 0.7, "minimum confidence score for variables (0.0-1.0)")
+	scanCmd.Flags().IntVar(&scanMinUsages, "min-usages", 1, "minimum number of usages to consider a variable required")
+	scanCmd.Flags().StringVar(&scanOutput, "output", "pretty", "output format (pretty, json, list)")
+	scanCmd.Flags().BoolVar(&scanGenerateConfig, "generate-config", false, "generate .ecolint.yaml with discovered variables")
+	scanCmd.Flags().StringSliceVar(&scanExcludePaths, "exclude", []string{}, "additional paths to exclude from scanning")
+	scanCmd.Flags().StringSliceVar(&scanIncludeExts, "include-ext", []string{}, "additional file extensions to scan")
+	scanCmd.Flags().BoolVar(&scanShowUsages, "show-usages", false, "show where each variable is used")
+}
+
+func runScan(cmd *cobra.Command, args []string) error {
+	// Determine path to scan
+	scanPath := "."
+	if len(args) > 0 {
+		scanPath = args[0]
+	}
+
+	// Verify path exists
+	if _, err := os.Stat(scanPath); os.IsNotExist(err) {
+		return fmt.Errorf("path does not exist: %s", scanPath)
+	}
+
+	// Create scanner
+	scanner := scan.NewProjectScanner()
+
+	// Apply custom configurations
+	if len(scanExcludePaths) > 0 {
+		scanner = scanner.WithExcludePaths(append(scanner.GetExcludePaths(), scanExcludePaths...))
+	}
+
+	if len(scanIncludeExts) > 0 {
+		scanner = scanner.WithIncludeExtensions(append(scanner.GetIncludeExtensions(), scanIncludeExts...))
+	}
+
+	// Perform the scan
+	fmt.Printf("🔍 Scanning %s for environment variable usage...\n\n", scanPath)
+	
+	result, err := scanner.ScanProject(scanPath)
+	if err != nil {
+		return fmt.Errorf("scan failed: %w", err)
+	}
+
+	// Print errors if any
+	if len(result.Errors) > 0 {
+		fmt.Printf("⚠️  Encountered %d errors during scanning:\n", len(result.Errors))
+		for _, scanErr := range result.Errors {
+			fmt.Printf("  • %v\n", scanErr)
+		}
+		fmt.Println()
+	}
+
+	// Get filtered variables
+	requiredVars := result.GetRequiredVariables(scanMinConfidence, scanMinUsages)
+
+	// Output results
+	switch scanOutput {
+	case "json":
+		return outputJSON(result, requiredVars)
+	case "list":
+		return outputList(requiredVars)
+	default:
+		return outputPretty(result, requiredVars, scanPath)
+	}
+}
+
+func outputPretty(result *scan.ScanResult, requiredVars []string, scanPath string) error {
+	// Summary
+	fmt.Printf("📊 Scan Summary:\n")
+	fmt.Printf("  • Scanned %d files\n", len(result.Files))
+	fmt.Printf("  • Found %d unique variables\n", len(result.Variables))
+	fmt.Printf("  • %d variables meet criteria (confidence ≥ %.1f, usages ≥ %d)\n\n", 
+		len(requiredVars), scanMinConfidence, scanMinUsages)
+
+	if len(requiredVars) == 0 {
+		fmt.Println("🤷 No environment variables found that meet the specified criteria.")
+		fmt.Println("💡 Try lowering --min-confidence or --min-usages to see more results.")
+		return nil
+	}
+
+	// Sort variables alphabetically
+	sort.Strings(requiredVars)
+
+	// Display required variables
+	fmt.Printf("🌿 Environment Variables Discovered:\n")
+	fmt.Println(strings.Repeat("─", 50))
+
+	for _, varName := range requiredVars {
+		usages := result.Variables[varName]
+		
+		// Calculate average confidence
+		totalConfidence := 0.0
+		for _, usage := range usages {
+			totalConfidence += usage.Confidence
+		}
+		avgConfidence := totalConfidence / float64(len(usages))
+		
+		// Get unique files
+		fileSet := make(map[string]bool)
+		for _, usage := range usages {
+			fileSet[usage.File] = true
+		}
+		
+		confidenceIcon := getConfidenceIcon(avgConfidence)
+		fmt.Printf("%s %s (%.1f%% confidence, %d usages across %d files)\n", 
+			confidenceIcon, varName, avgConfidence*100, len(usages), len(fileSet))
+
+		// Show usage details if requested
+		if scanShowUsages {
+			for _, usage := range usages {
+				relPath, _ := filepath.Rel(scanPath, usage.File)
+				fmt.Printf("    📍 %s:%d - %s\n", relPath, usage.Line, 
+					truncateString(usage.Context, 60))
+			}
+		}
+	}
+
+	fmt.Println()
+
+	// Generate config suggestion
+	if scanGenerateConfig {
+		return generateConfig(requiredVars)
+	}
+
+	// Show next steps
+	fmt.Println("💡 Next Steps:")
+	fmt.Println("  • Review the discovered variables above")
+	fmt.Println("  • Add missing variables to your .env files")
+	fmt.Printf("  • Run: ecolint scan --generate-config  # to create configuration\n")
+	fmt.Printf("  • Run: ecolint lint --auto-discover    # to lint with discovered variables\n")
+
+	return nil
+}
+
+func outputJSON(result *scan.ScanResult, requiredVars []string) error {
+	import "encoding/json"
+	
+	output := struct {
+		ScanPath     string                        `json:"scan_path"`
+		FilesScanned int                          `json:"files_scanned"`
+		Variables    map[string][]scan.UsageResult `json:"variables"`
+		Required     []string                     `json:"required_variables"`
+		Errors       []string                     `json:"errors"`
+		Summary      struct {
+			TotalVariables    int     `json:"total_variables"`
+			RequiredVariables int     `json:"required_variables"`
+			MinConfidence     float64 `json:"min_confidence"`
+			MinUsages         int     `json:"min_usages"`
+		} `json:"summary"`
+	}{
+		ScanPath:     ".", // This should be passed from the scan path
+		FilesScanned: len(result.Files),
+		Variables:    result.Variables,
+		Required:     requiredVars,
+		Errors:       make([]string, len(result.Errors)),
+		Summary: struct {
+			TotalVariables    int     `json:"total_variables"`
+			RequiredVariables int     `json:"required_variables"`
+			MinConfidence     float64 `json:"min_confidence"`
+			MinUsages         int     `json:"min_usages"`
+		}{
+			TotalVariables:    len(result.Variables),
+			RequiredVariables: len(requiredVars),
+			MinConfidence:     scanMinConfidence,
+			MinUsages:         scanMinUsages,
+		},
+	}
+
+	// Convert errors to strings
+	for i, err := range result.Errors {
+		output.Errors[i] = err.Error()
+	}
+
+	encoder := json.NewEncoder(os.Stdout)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(output)
+}
+
+func outputList(requiredVars []string) error {
+	sort.Strings(requiredVars)
+	for _, varName := range requiredVars {
+		fmt.Println(varName)
+	}
+	return nil
+}
+
+func generateConfig(requiredVars []string) error {
+	configPath := ".ecolint.yaml"
+	
+	// Check if config already exists
+	if _, err := os.Stat(configPath); err == nil {
+		fmt.Printf("⚠️  Configuration file %s already exists.\n", configPath)
+		fmt.Print("Do you want to update it with discovered variables? (y/N): ")
+		
+		var response string
+		fmt.Scanln(&response)
+		if strings.ToLower(response) != "y" && strings.ToLower(response) != "yes" {
+			fmt.Println("Configuration update cancelled.")
+			return nil
+		}
+	}
+
+	// Generate configuration content
+	sort.Strings(requiredVars)
+	
+	configContent := `# ecolint configuration file
+# 🌱 cultivating clean environments
+# Generated by 'ecolint scan --generate-config'
+
+# Environment variables discovered in your project
+required_vars:
+`
+	
+	for _, varName := range requiredVars {
+		configContent += fmt.Sprintf("  - %s\n", varName)
+	}
+
+	configContent += `
+# Rule configuration
+rules:
+  duplicate: true      # Check for duplicate variable definitions
+  missing: true        # Check for missing required variables (auto-discovered)
+  syntax: true         # Validate .env file syntax
+  empty_values: true   # Warn about empty variable values
+  security: true       # Check for potential secrets in plaintext
+  convention: true     # Enforce naming conventions
+
+# Output configuration
+output:
+  format: "pretty"     # Output format: pretty, json, github
+  color: true          # Enable colored output
+
+# Auto-discovery settings (for future scans)
+scan:
+  min_confidence: ` + fmt.Sprintf("%.1f", scanMinConfidence) + `  # Minimum confidence for auto-discovered variables
+  min_usages: ` + fmt.Sprintf("%d", scanMinUsages) + `         # Minimum usage count for auto-discovered variables
+  exclude_paths:       # Additional paths to exclude from scanning
+    - "vendor"
+    - "node_modules"
+    - ".git"
+`
+
+	// Write the configuration
+	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		return fmt.Errorf("failed to write configuration: %w", err)
+	}
+
+	fmt.Printf("✅ Generated %s with %d discovered variables\n", configPath, len(requiredVars))
+	fmt.Println("💡 You can now run 'ecolint lint' to check your .env files!")
+	
+	return nil
+}
+
+func getConfidenceIcon(confidence float64) string {
+	if confidence >= 0.9 {
+		return "🟢" // High confidence
+	} else if confidence >= 0.7 {
+		return "🟡" // Medium confidence  
+	} else {
+		return "🔴" // Low confidence
+	}
+}
+
+func truncateString(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen-3] + "..."
+}
+
+// Add missing methods to scanner for configuration
+func (ps *ProjectScanner) GetExcludePaths() []string {
+	return ps.excludePaths
+}
+
+func (ps *ProjectScanner) GetIncludeExtensions() []string {
+	return ps.includeExts
+}
